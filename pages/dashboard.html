@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+
+<title>Dashboard — AGENTE ATLAS</title>
+
+<link rel="stylesheet" href="../css/style.css">
+
+</head>
+
+<body>
+
+<template id="page">
+
+<div class="topbar">
+  <div>
+    <h1>Dashboard</h1>
+    <div class="sub">Visão geral do estoque</div>
+  </div>
+</div>
+
+
+<div class="grid cols-4" id="kpis"></div>
+
+
+<div style="height:20px"></div>
+
+
+<div class="grid cols-2">
+
+<div class="card">
+
+<h3 style="margin-bottom:10px">
+Últimas movimentações
+</h3>
+
+
+<div class="table-wrap">
+
+<table id="t-mov">
+
+<thead>
+<tr>
+<th>Data</th>
+<th>Produto</th>
+<th>Tipo</th>
+<th>Qtd</th>
+</tr>
+</thead>
+
+<tbody></tbody>
+
+</table>
+
+</div>
+
+</div>
+
+
+
+<div class="card">
+
+<h3 style="margin-bottom:10px">
+Alertas de estoque baixo
+</h3>
+
+
+<div class="table-wrap">
+
+<table id="t-alerta">
+
+<thead>
+<tr>
+<th>Produto</th>
+<th>Qtd</th>
+<th>Mínimo</th>
+</tr>
+</thead>
+
+
+<tbody></tbody>
+
+
+</table>
+
+</div>
+
+</div>
+
+
+</div>
+
+
+</template>
+
+
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/shell.js"></script>
+
+<script>
+
+renderShell('dashboard');
+
+
+(async()=>{
+
+try{
+
+
+const r = await API.get('/dashboard');
+
+
+document.getElementById('kpis').innerHTML = `
+
+
+<div class="card kpi">
+<div class="label">Produtos</div>
+<div class="value">
+${r.total_produtos}
+</div>
+</div>
+
+
+
+<div class="card kpi success">
+<div class="label">Valor do estoque</div>
+
+<div class="value">
+${fmtMoney(r.valor_total_estoque)}
+</div>
+
+</div>
+
+
+
+<div class="card kpi ${r.produtos_abaixo_minimo>0?'warn':''}">
+
+<div class="label">
+Abaixo do mínimo
+</div>
+
+<div class="value">
+${r.produtos_abaixo_minimo}
+</div>
+
+</div>
+
+
+
+<div class="card kpi">
+
+<div class="label">
+Vendas do mês
+</div>
+
+<div class="value">
+${fmtMoney(r.vendas_mes_total)}
+</div>
+
+
+<div class="delta">
+${r.vendas_mes_qtde} venda(s)
+</div>
+
+</div>
+
+`;
+
+
+
+
+const mov = await API.get('/estoque/historico');
+
+
+document.querySelector('#t-mov tbody').innerHTML =
+
+mov.slice(0,10).map(m=>`
+
+<tr>
+
+<td>${fmtDate(m.data)}</td>
+
+<td>${m.produto_nome}</td>
+
+
+<td>
+
+<span class="badge ${
+m.tipo==='entrada'
+?'success'
+:m.tipo==='venda'
+?'warn'
+:'danger'
+}">
+
+${m.tipo}
+
+</span>
+
+</td>
+
+
+<td>${m.quantidade}</td>
+
+
+</tr>
+
+`).join('')
+
+||
+
+'<tr><td colspan="4">Sem movimentações.</td></tr>';
+
+
+
+
+
+const al = await API.get('/estoque/alertas');
+
+
+document.querySelector('#t-alerta tbody').innerHTML =
+
+al.map(p=>`
+
+<tr>
+
+<td>${p.nome}</td>
+
+<td>
+<span class="badge danger">
+${p.quantidade}
+</span>
+</td>
+
+
+<td>${p.estoque_minimo}</td>
+
+
+</tr>
+
+`).join('')
+
+||
+
+'<tr><td colspan="3">Tudo em ordem.</td></tr>';
+
+
+
+}
+
+catch(e){
+
+alert(e.message);
+
+}
+
+
+})();
+
+
+</script>
+
+
+</body>
+</html>

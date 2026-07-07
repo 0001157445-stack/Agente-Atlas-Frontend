@@ -1,0 +1,289 @@
+<!doctype html><html lang="pt-br"><head>
+  <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  
+  <title>Vendas — AGENTE ATLAS</title>
+  <link rel="stylesheet" href="">
+  <link rel="stylesheet" href="../css/style.css">
+  
+  </head><body>
+  
+  <template id="page">
+  
+  <div class="topbar">
+  <div>
+  <h1>Vendas</h1>
+  <div class="sub">Registre e acompanhe vendas</div>
+  </div>
+  </div>
+  
+  
+  <div class="grid cols-2">
+  
+  
+  <div class="card">
+  
+  <h3 style="margin-bottom:10px">Nova venda</h3>
+  
+  <form id="form-v">
+  
+  
+  <label>Produto</label>
+  
+  <select name="produto_id" id="sel" required></select>
+  
+  
+  <div class="row">
+  
+  <div>
+  <label>Cliente</label>
+  <input name="cliente" placeholder="Opcional"/>
+  </div>
+  
+  
+  <div>
+  <label>Quantidade</label>
+  <input name="quantidade" type="number" min="1" value="1" required/>
+  </div>
+  
+  </div>
+  
+  
+  <div id="resumo" class="msg" style="color:var(--muted)"></div>
+  
+  
+  <button class="btn" type="submit">
+  Registrar venda
+  </button>
+  
+  
+  <div id="msg" class="msg"></div>
+  
+  
+  </form>
+  
+  </div>
+  
+  
+  
+  <div class="card">
+  
+  
+  <h3 style="margin-bottom:10px">Histórico</h3>
+  
+  
+  <div class="table-wrap">
+  
+  <table id="t">
+  
+  <thead>
+  
+  <tr>
+  <th>Data</th>
+  <th>Produto</th>
+  <th>Cliente</th>
+  <th>Qtd</th>
+  <th>Total</th>
+  </tr>
+  
+  </thead>
+  
+  
+  <tbody></tbody>
+  
+  
+  </table>
+  
+  </div>
+  
+  
+  </div>
+  
+  
+  </div>
+  
+  
+  </template>
+  
+  
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/shell.js"></script>
+  
+  <script>
+  
+  renderShell('vendas');
+  
+  
+  let produtos=[];
+  
+  
+  async function init(){
+  
+  
+  produtos = await API.get('/produtos');
+  
+  
+  document.getElementById('sel').innerHTML =
+  produtos.map(p=>`
+  
+  <option value="${p.id}"
+  data-preco="${p.preco_venda}"
+  data-est="${p.quantidade}">
+  
+  ${p.nome} — ${fmtMoney(p.preco_venda)}
+  (estoque: ${p.quantidade})
+  
+  </option>
+  
+  `).join('');
+  
+  
+  atualizarResumo();
+  
+  
+  await carregar();
+  
+  
+  }
+  
+  
+  
+  function atualizarResumo(){
+  
+  
+  const sel=document.getElementById('sel');
+  
+  const opt=sel.options[sel.selectedIndex];
+  
+  if(!opt)return;
+  
+  
+  const q=Number(
+  document.querySelector('[name=quantidade]').value||0
+  );
+  
+  
+  const preco=Number(opt.dataset.preco);
+  
+  
+  document.getElementById('resumo').textContent =
+  `Total: ${fmtMoney(preco*q)} • Estoque atual: ${opt.dataset.est}`;
+  
+  
+  }
+  
+  
+  
+  document.addEventListener('input',e=>{
+  
+  if(e.target.id==='sel' || e.target.name==='quantidade'){
+  
+  atualizarResumo();
+  
+  }
+  
+  });
+  
+  
+  
+  async function carregar(){
+  
+  
+  const v=await API.get('/vendas');
+  
+  
+  document.querySelector('#t tbody').innerHTML =
+  v.map(x=>`
+  
+  <tr>
+  
+  <td>${fmtDate(x.data_venda)}</td>
+  
+  <td>${x.produto_nome}</td>
+  
+  <td>${x.cliente||'-'}</td>
+  
+  <td>${x.quantidade}</td>
+  
+  <td>${fmtMoney(x.valor_total)}</td>
+  
+  
+  </tr>
+  
+  `).join('')
+  
+  ||
+  
+  '<tr><td colspan="5">Sem vendas.</td></tr>';
+  
+  
+  }
+  
+  
+  
+  document.getElementById('form-v')
+  .addEventListener('submit',async e=>{
+  
+  
+  e.preventDefault();
+  
+  
+  const f=new FormData(e.target);
+  
+  
+  const body={
+  
+  produto_id:Number(f.get('produto_id')),
+  
+  cliente:f.get('cliente')||null,
+  
+  quantidade:Number(f.get('quantidade'))
+  
+  };
+  
+  
+  const msg=document.getElementById('msg');
+  
+  msg.className='msg';
+  
+  
+  
+  try{
+  
+  
+  const r=await API.post('/vendas',body);
+  
+  
+  msg.className='msg success';
+  
+  
+  msg.textContent =
+  `Venda registrada (${fmtMoney(r.valor_total)})`+
+  (r.alerta_estoque_minimo?' ⚠ Estoque atingiu o mínimo.':'');
+  
+  
+  await init();
+  
+  
+  }catch(err){
+  
+  
+  msg.className='msg error';
+  
+  msg.textContent=err.message;
+  
+  
+  }
+  
+  
+  });
+  
+  
+  
+  init();
+  
+  
+  </script>
+  
+  
+  </body></html>

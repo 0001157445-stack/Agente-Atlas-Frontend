@@ -1,0 +1,193 @@
+<!doctype html><html lang="pt-br"><head>
+  <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Agente Atlas — Insights</title>
+  <link rel="stylesheet" href="../css/style.css"></head><body>
+  
+  <template id="page">
+    <div class="topbar">
+      <div>
+        <h1>Agente Atlas</h1>
+        <div class="sub">Inteligência operacional da loja</div>
+      </div>
+    </div>
+  
+    <div class="grid cols-3" id="kpis"></div>
+  
+    <div style="height:20px"></div>
+  
+    <div class="grid cols-2">
+      <div class="card">
+        <h3 style="margin-bottom:6px">🚨 Produtos abaixo do estoque mínimo</h3>
+        <p style="color:var(--muted);font-size:12px;margin-bottom:10px">
+          Reabasteça com prioridade.
+        </p>
+  
+        <div class="table-wrap">
+          <table id="t-low">
+            <thead>
+              <tr><th>Produto</th><th>Qtd</th><th>Mínimo</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+  
+  
+      <div class="card">
+        <h3 style="margin-bottom:6px">🔥 Produto mais vendido da semana</h3>
+        <p style="color:var(--muted);font-size:12px;margin-bottom:10px">
+          Últimos 7 dias.
+        </p>
+  
+        <div id="top" style="font-size:18px"></div>
+      </div>
+    </div>
+  
+  
+    <div style="height:20px"></div>
+  
+  
+    <div class="card">
+      <h3 style="margin-bottom:6px">📦 Sem movimentação há mais de 60 dias</h3>
+      <p style="color:var(--muted);font-size:12px;margin-bottom:10px">
+        Considere promoções ou liquidação.
+      </p>
+  
+      <div class="table-wrap">
+        <table id="t-dead">
+          <thead>
+            <tr>
+              <th>Produto</th>
+              <th>Categoria</th>
+              <th>Qtd</th>
+              <th>Cadastrado</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  
+  </template>
+  
+  
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/shell.js"></script>
+  
+  <script>
+  
+  renderShell('agente');
+  
+  
+  (async () => {
+  
+  try {
+  
+  const r = await API.get('/agente');
+  
+  const s = r.resumo_estoque;
+  
+  
+  document.getElementById('kpis').innerHTML = `
+  
+  <div class="card kpi">
+  <div class="label">📊 Produtos</div>
+  <div class="value">${s.total_produtos}</div>
+  </div>
+  
+  
+  <div class="card kpi">
+  <div class="label">📊 Unidades em estoque</div>
+  <div class="value">${s.unidades_em_estoque}</div>
+  </div>
+  
+  
+  <div class="card kpi success">
+  <div class="label">📊 Valor de estoque</div>
+  <div class="value">${fmtMoney(s.valor_total_estoque)}</div>
+  </div>
+  
+  `;
+  
+  
+  
+  document.querySelector('#t-low tbody').innerHTML =
+  r.alerta_estoque_baixo.map(p=>`
+  
+  <tr>
+  <td>${p.nome}</td>
+  <td>
+  <span class="badge danger">${p.quantidade}</span>
+  </td>
+  <td>${p.estoque_minimo}</td>
+  </tr>
+  
+  `).join('') ||
+  '<tr><td colspan="3">Sem alertas.</td></tr>';
+  
+  
+  
+  const top = r.produto_mais_vendido_semana;
+  
+  
+  document.getElementById('top').innerHTML = top
+  
+  ?
+  
+  `<b>${top.nome}</b>
+  <span class="badge success">
+  ${top.total_vendido} un.
+  </span>
+  
+  <div style="color:var(--muted);font-size:13px;margin-top:4px">
+  ${top.codigo||''}
+  </div>`
+  
+  :
+  
+  `<span style="color:var(--muted)">
+  Sem vendas nos últimos 7 dias.
+  </span>`;
+  
+  
+  
+  
+  document.querySelector('#t-dead tbody').innerHTML =
+  
+  r.sem_movimentacao_60_dias.map(p=>`
+  
+  <tr>
+  
+  <td>${p.nome}</td>
+  
+  <td>${p.categoria||'-'}</td>
+  
+  <td>${p.quantidade}</td>
+  
+  <td>${fmtDate(p.data_cadastro)}</td>
+  
+  </tr>
+  
+  `).join('')
+  
+  ||
+  
+  '<tr><td colspan="4">Tudo girando.</td></tr>';
+  
+  
+  
+  }
+  
+  catch(e){
+  
+  alert(e.message);
+  
+  }
+  
+  
+  })();
+  
+  </script>
+  
+  </body></html>

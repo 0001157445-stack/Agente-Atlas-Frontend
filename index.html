@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+
+<title>AGENTE ATLAS — Acesso</title>
+<link rel="stylesheet" href="css/style.css">
+
+</head>
+
+<body>
+
+
+<div class="login-wrap">
+
+<div class="login-card">
+
+
+<div class="brand">
+
+<div class="brand-mark">A</div>
+
+<div class="brand-name">
+AGENTE ATLAS
+<small>STOCK SYSTEM</small>
+</div>
+
+</div>
+
+
+
+<h1 class="login-title">Entrar</h1>
+
+<p class="login-sub">
+Controle de estoque da sua loja.
+</p>
+
+
+
+<form id="form-login">
+
+
+<label>E-mail</label>
+
+<input 
+type="email"
+name="email"
+required
+value="admin@atlas.com"
+/>
+
+
+<label>Senha</label>
+
+<input
+type="password"
+name="senha"
+required
+value="admin123"
+/>
+
+
+
+<button class="btn" type="submit">
+Entrar
+</button>
+
+
+<div id="msg" class="msg"></div>
+
+
+</form>
+
+
+
+
+
+<details style="margin-top:18px;color:var(--muted);font-size:12px">
+
+
+<summary style="cursor:pointer">
+Cadastrar novo usuário
+</summary>
+
+
+
+<form id="form-cad" style="margin-top:10px">
+
+
+<label>Nome</label>
+
+<input name="nome" required/>
+
+
+
+<label>E-mail</label>
+
+<input 
+name="email"
+type="email"
+required
+/>
+
+
+
+<label>Senha</label>
+
+<input 
+name="senha"
+type="password"
+required
+/>
+
+
+
+<label>Cargo</label>
+
+<input 
+name="cargo"
+placeholder="operador"
+/>
+
+
+
+<button class="btn ghost" type="submit">
+Criar conta
+</button>
+
+
+
+<div id="msg2" class="msg"></div>
+
+
+</form>
+
+
+</details>
+
+
+
+</div>
+
+</div>
+
+
+<script src="./js/api.js"></script>
+<script src="./js/auth.js"></script>
+<script>
+
+
+document
+.getElementById('form-login')
+.addEventListener('submit', async(e)=>{
+
+
+e.preventDefault();
+
+
+const f = new FormData(e.target);
+
+
+const msg=document.getElementById('msg');
+
+
+msg.className='msg';
+
+msg.textContent='Autenticando...';
+
+
+
+try{
+
+
+const r = await API.post('http://localhost:3000/usuarios/login',{
+
+email:f.get('email'),
+
+senha:f.get('senha')
+
+});
+
+
+
+Auth.set(r.usuario);
+
+
+
+location.href='/pages/dashboard.html';
+
+
+
+}catch(err){
+
+
+msg.className='msg error';
+
+msg.textContent=err.message;
+
+
+}
+
+
+});
+
+
+
+
+
+document
+.getElementById('form-cad')
+.addEventListener('submit',async(e)=>{
+
+
+e.preventDefault();
+
+
+
+const f=new FormData(e.target);
+
+
+const msg=document.getElementById('msg2');
+
+
+msg.className='msg';
+
+
+
+try{
+
+
+await API.post('/usuarios/cadastro',{
+
+
+nome:f.get('nome'),
+
+email:f.get('email'),
+
+senha:f.get('senha'),
+
+cargo:f.get('cargo') || 'operador'
+
+
+});
+
+
+
+msg.className='msg success';
+
+msg.textContent='Conta criada. Faça login.';
+
+
+
+e.target.reset();
+
+
+
+}catch(err){
+
+
+msg.className='msg error';
+
+msg.textContent=err.message;
+
+
+}
+
+
+});
+
+
+</script>
+
+
+</body>
+</html>

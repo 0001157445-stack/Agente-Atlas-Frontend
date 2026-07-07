@@ -1,0 +1,362 @@
+<!doctype html><html lang="pt-br"><head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  
+  <title>Estoque — AGENTE ATLAS</title>
+  
+  <link rel="stylesheet" href="../css/style.css">
+  
+  </head><body>
+  
+  <template id="page">
+  
+  <div class="topbar">
+  <div>
+  <h1>Estoque</h1>
+  <div class="sub">Entradas, saídas e histórico</div>
+  </div>
+  </div>
+  
+  
+  <div class="grid cols-2">
+  
+  <div class="card">
+  
+  <h3>Entrada de estoque</h3>
+  
+  <form id="f-in">
+  
+  <label>Produto</label>
+  <select name="produto_id" class="sel-prod" required></select>
+  
+  
+  <div class="row">
+  
+  <div>
+  <label>Quantidade</label>
+  <input name="quantidade" type="number" min="1" value="1" required/>
+  </div>
+  
+  
+  <div>
+  <label>Descrição</label>
+  <input name="descricao" placeholder="NF, fornecedor..."/>
+  </div>
+  
+  </div>
+  
+  
+  <button class="btn" type="submit">
+  Registrar entrada
+  </button>
+  
+  <div class="msg" id="m-in"></div>
+  
+  </form>
+  
+  </div>
+  
+  
+  
+  <div class="card">
+  
+  <h3>Saída de estoque</h3>
+  
+  <form id="f-out">
+  
+  
+  <label>Produto</label>
+  <select name="produto_id" class="sel-prod" required></select>
+  
+  
+  <div class="row">
+  
+  <div>
+  <label>Quantidade</label>
+  <input name="quantidade" type="number" min="1" value="1" required/>
+  </div>
+  
+  
+  <div>
+  <label>Descrição</label>
+  <input name="descricao" placeholder="Motivo"/>
+  </div>
+  
+  </div>
+  
+  
+  <button class="btn danger" type="submit">
+  Registrar saída
+  </button>
+  
+  
+  <div class="msg" id="m-out"></div>
+  
+  
+  </form>
+  
+  </div>
+  
+  </div>
+  
+  
+  <div style="height:20px"></div>
+  
+  
+  <div class="grid cols-2">
+  
+  
+  <div class="card">
+  
+  <h3>Alertas de estoque mínimo</h3>
+  
+  <div class="table-wrap">
+  
+  <table id="t-a">
+  
+  <thead>
+  <tr>
+  <th>Produto</th>
+  <th>Código</th>
+  <th>Qtd</th>
+  <th>Mínimo</th>
+  </tr>
+  </thead>
+  
+  <tbody></tbody>
+  
+  </table>
+  
+  </div>
+  
+  </div>
+  
+  
+  
+  <div class="card">
+  
+  <h3>Histórico de movimentações</h3>
+  
+  <div class="table-wrap">
+  
+  <table id="t-h">
+  
+  <thead>
+  
+  <tr>
+  <th>Data</th>
+  <th>Produto</th>
+  <th>Tipo</th>
+  <th>Qtd</th>
+  <th>Descrição</th>
+  </tr>
+  
+  </thead>
+  
+  
+  <tbody></tbody>
+  
+  
+  </table>
+  
+  </div>
+  
+  </div>
+  
+  
+  </div>
+  
+  
+  </template>
+  
+  
+  
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/shell.js"></script>
+  
+  <script>
+  
+  
+  renderShell('estoque');
+  
+  
+  
+  async function loadSelects(){
+  
+  const ps = await API.get('/produtos');
+  
+  
+  document.querySelectorAll('.sel-prod').forEach(sel=>{
+  
+  sel.innerHTML = ps.map(p=>`
+  
+  <option value="${p.id}">
+  ${p.nome} (estoque: ${p.quantidade})
+  </option>
+  
+  `).join('');
+  
+  });
+  
+  }
+  
+  
+  
+  async function loadAlertas(){
+  
+  const al = await API.get('/estoque/alertas');
+  
+  
+  document.querySelector('#t-a tbody').innerHTML =
+  al.map(p=>`
+  
+  <tr>
+  
+  <td>${p.nome}</td>
+  
+  <td>${p.codigo || '-'}</td>
+  
+  <td>
+  <span class="badge danger">
+  ${p.quantidade}
+  </span>
+  </td>
+  
+  <td>${p.estoque_minimo}</td>
+  
+  
+  </tr>
+  
+  `).join('')
+  ||
+  '<tr><td colspan="4">Sem alertas.</td></tr>';
+  
+  }
+  
+  
+  
+  
+  async function loadHist(){
+  
+  const h = await API.get('/estoque/historico');
+  
+  
+  document.querySelector('#t-h tbody').innerHTML =
+  h.map(m=>`
+  
+  <tr>
+  
+  <td>${fmtDate(m.data)}</td>
+  
+  <td>${m.produto_nome}</td>
+  
+  <td>
+  <span class="badge ${
+  m.tipo==='entrada'
+  ?'success'
+  :m.tipo==='venda'
+  ?'warn'
+  :'danger'}">
+  
+  ${m.tipo}
+  
+  </span>
+  </td>
+  
+  
+  <td>${m.quantidade}</td>
+  
+  <td>${m.descricao || '-'}</td>
+  
+  
+  </tr>
+  
+  `).join('')
+  ||
+  '<tr><td colspan="5">Sem registros.</td></tr>';
+  
+  }
+  
+  
+  
+  
+  async function refresh(){
+  
+  await Promise.all([
+  loadSelects(),
+  loadAlertas(),
+  loadHist()
+  ]);
+  
+  }
+  
+  
+  
+  
+  
+  function bind(formId,path,msgId){
+  
+  
+  document.getElementById(formId)
+  .addEventListener('submit',async e=>{
+  
+  
+  e.preventDefault();
+  
+  
+  const f=new FormData(e.target);
+  
+  
+  const body={
+  
+  produto_id:Number(f.get('produto_id')),
+  quantidade:Number(f.get('quantidade')),
+  descricao:f.get('descricao') || null
+  
+  };
+  
+  
+  
+  const msg=document.getElementById(msgId);
+  
+  
+  try{
+  
+  
+  await API.post(path,body);
+  
+  
+  msg.className='msg success';
+  msg.textContent='OK';
+  
+  
+  await refresh();
+  
+  
+  }catch(err){
+  
+  msg.className='msg error';
+  msg.textContent=err.message;
+  
+  }
+  
+  
+  });
+  
+  }
+  
+  
+  
+  bind('f-in','/estoque/entrada','m-in');
+  
+  bind('f-out','/estoque/saida','m-out');
+  
+  
+  refresh();
+  
+  
+  </script>
+  
+  
+  </body></html>

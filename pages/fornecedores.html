@@ -1,0 +1,272 @@
+<!doctype html><html lang="pt-br"><head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  
+  <title>Fornecedores — AGENTE ATLAS</title>
+  <link rel="stylesheet" href="../css/style.css">
+  
+  </head><body>
+  
+  <template id="page">
+  
+  <div class="topbar">
+  <div>
+  <h1>Fornecedores</h1>
+  <div class="sub">Parceiros da loja</div>
+  </div>
+  </div>
+  
+  
+  <div class="grid cols-2">
+  
+  
+  <div class="card">
+  
+  <h3>Novo fornecedor</h3>
+  
+  
+  <form id="f">
+  
+  <input type="hidden" name="id"/>
+  
+  
+  <label>Nome</label>
+  <input name="nome" required/>
+  
+  
+  <div class="row">
+  
+  <div>
+  <label>Telefone</label>
+  <input name="telefone"/>
+  </div>
+  
+  
+  <div>
+  <label>E-mail</label>
+  <input name="email" type="email"/>
+  </div>
+  
+  </div>
+  
+  
+  <button class="btn" type="submit">
+  Salvar
+  </button>
+  
+  
+  <div id="msg" class="msg"></div>
+  
+  
+  </form>
+  
+  
+  </div>
+  
+  
+  
+  <div class="card">
+  
+  <h3>Cadastrados</h3>
+  
+  
+  <div class="table-wrap">
+  
+  <table id="t">
+  
+  <thead>
+  
+  <tr>
+  <th>Nome</th>
+  <th>Telefone</th>
+  <th>E-mail</th>
+  <th></th>
+  </tr>
+  
+  </thead>
+  
+  
+  <tbody></tbody>
+  
+  
+  </table>
+  
+  </div>
+  
+  
+  </div>
+  
+  
+  </div>
+  
+  
+  </template>
+  
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/shell.js"></script>
+  <script>
+  
+  
+  renderShell('fornecedores');
+  
+  
+  
+  async function carregar(){
+  
+  
+  const list = await API.get('/fornecedores');
+  
+  
+  document.querySelector('#t tbody').innerHTML =
+  
+  list.map(x=>`
+  
+  <tr>
+  
+  <td>${x.nome}</td>
+  
+  <td>${x.telefone || '-'}</td>
+  
+  <td>${x.email || '-'}</td>
+  
+  
+  <td class="actions">
+  
+  <button class="icon-btn" onclick="editar(${x.id})">
+  Editar
+  </button>
+  
+  
+  <button class="icon-btn danger" onclick="remover(${x.id})">
+  Excluir
+  </button>
+  
+  
+  </td>
+  
+  
+  </tr>
+  
+  `).join('')
+  
+  ||
+  '<tr><td colspan="4">Nenhum fornecedor.</td></tr>';
+  
+  
+  window.__forn=list;
+  
+  
+  }
+  
+  
+  
+  
+  function editar(id){
+  
+  
+  const x = window.__forn.find(f=>f.id===id);
+  
+  const f=document.getElementById('f');
+  
+  
+  for(const k in x){
+  
+  if(f.elements[k]){
+  f.elements[k].value=x[k] ?? '';
+  }
+  
+  }
+  
+  }
+  
+  
+  
+  
+  async function remover(id){
+  
+  
+  if(!confirm('Remover fornecedor?')) return;
+  
+  
+  await API.del('/fornecedores/'+id);
+  
+  
+  carregar();
+  
+  
+  }
+  
+  
+  
+  
+  
+  document.getElementById('f')
+  .addEventListener('submit',async e=>{
+  
+  
+  e.preventDefault();
+  
+  
+  const fd=new FormData(e.target);
+  
+  
+  const body={
+  
+  nome:fd.get('nome'),
+  telefone:fd.get('telefone'),
+  email:fd.get('email')
+  
+  };
+  
+  
+  const id=fd.get('id');
+  
+  const msg=document.getElementById('msg');
+  
+  
+  try{
+  
+  
+  if(id){
+  
+  await API.put('/fornecedores/'+id,body);
+  
+  }else{
+  
+  await API.post('/fornecedores',body);
+  
+  }
+  
+  
+  e.target.reset();
+  
+  
+  msg.className='msg success';
+  msg.textContent='Salvo';
+  
+  
+  carregar();
+  
+  
+  }catch(err){
+  
+  
+  msg.className='msg error';
+  msg.textContent=err.message;
+  
+  
+  }
+  
+  
+  });
+  
+  
+  
+  carregar();
+  
+  
+  </script>
+  
+  
+  </body></html>
