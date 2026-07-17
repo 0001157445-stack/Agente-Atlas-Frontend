@@ -145,6 +145,7 @@ Criar conta
 </div>
 
 
+<script src="./js/config.js"></script>
 <script src="./js/api.js"></script>
 <script src="./js/auth.js"></script>
 <script>
@@ -173,7 +174,7 @@ msg.textContent='Autenticando...';
 try{
 
 
-const r = await API.post('http://localhost:3000/usuarios/login',{
+const r = await API.post('/usuarios/login',{
 
 email:f.get('email'),
 

@@ -1,5 +1,5 @@
 const API = (() => {
-  const base = '';
+  const base = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : '';
   async function req(method, path, body) {
     const opts = { method, headers: { 'Content-Type': 'application/json' } };
     if (body !== undefined) opts.body = JSON.stringify(body);
